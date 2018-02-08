@@ -1,0 +1,1 @@
+ADD_COMPUCELL3D_PLUGIN(Velocity LINK_LIBRARIES CompuCellLibShared)
