@@ -778,8 +778,8 @@ class Ui_NewSimulationWizard(object):
         NewSimulationWizard.addPage(self.wizardPage_3)
 
         self.retranslateUi(NewSimulationWizard)
-        self.piffRB.toggled['bool'].connect(self.piffPB.setShown)
-        self.piffRB.toggled['bool'].connect(self.piffLE.setShown)
+        #self.piffRB.toggled['bool'].connect(self.piffPB.setShown)
+        #self.piffRB.toggled['bool'].connect(self.piffLE.setShown)
         QtCore.QMetaObject.connectSlotsByName(NewSimulationWizard)
 
     def retranslateUi(self, NewSimulationWizard):
@@ -1221,4 +1221,3 @@ class Ui_NewSimulationWizard(object):
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:12pt;\">CC3D project will be generated now</span></p>\n"
 "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:12pt;\"><br /></p>\n"
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:12pt; font-weight:600; color:#0000ff;\">NOTE:</span><span style=\" font-size:12pt;\"> The parameters in the XML and Python scripts will have to be changed to be realistic. Please see CC3D manual on how to choose simulation parameters</span></p></body></html>"))
-
