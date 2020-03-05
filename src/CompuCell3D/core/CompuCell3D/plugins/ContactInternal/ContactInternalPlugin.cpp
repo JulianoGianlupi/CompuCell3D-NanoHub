@@ -21,24 +21,8 @@
  *************************************************************************/
 
 #include <CompuCell3D/CC3D.h>
-// // // #include <CompuCell3D/Field3D/Field3D.h>
-// // // #include <CompuCell3D/Field3D/WatchableField3D.h>
-// // // #include <CompuCell3D/Potts3D/Potts3D.h>
-
-// // // #include <CompuCell3D/Simulator.h>
-// // // #include <CompuCell3D/Automaton/Automaton.h>
 using namespace CompuCell3D;
-
-
-// // // #include <BasicUtils/BasicString.h>
-// // // #include <BasicUtils/BasicException.h>
-
-
-
 #include "ContactInternalPlugin.h"
-
-
-
 
 
 ContactInternalPlugin::ContactInternalPlugin() : potts(0), depth(1),weightDistance(false) {
@@ -85,11 +69,6 @@ double ContactInternalPlugin::changeEnergy(const Point3D &pt,
 
    if(weightDistance){
 
-//       while (true) {
-//          n = fieldG->getNeighbor(pt, token, distance, false);
-//          if (distance > depth) break;
-// 
-//          nCell = fieldG->get(n);
       for(unsigned int nIdx=0 ; nIdx <= maxNeighborIndex ; ++nIdx ){
          neighbor=boundaryStrategy->getNeighborDirect(const_cast<Point3D&>(pt),nIdx);
          if(!neighbor.distance){
@@ -115,12 +94,7 @@ double ContactInternalPlugin::changeEnergy(const Point3D &pt,
          }
       }
   }else{
-   //default behaviour  no energy weighting 
-//       while (true) {
-//          n = fieldG->getNeighbor(pt, token, distance, false);
-//          if (distance > depth) break;
-// 
-//          nCell = fieldG->get(n);
+
       for(unsigned int nIdx=0 ; nIdx <= maxNeighborIndex ; ++nIdx ){
          neighbor=boundaryStrategy->getNeighborDirect(const_cast<Point3D&>(pt),nIdx);
          if(!neighbor.distance){
@@ -136,8 +110,6 @@ double ContactInternalPlugin::changeEnergy(const Point3D &pt,
                }
             }
          }
-
-
 
          if(nCell!=newCell){
             if((newCell != 0) && (nCell != 0)) {
@@ -180,24 +152,24 @@ int ContactInternalPlugin::getIndex(const int type1, const int type2) const {
 
 void ContactInternalPlugin::update(CC3DXMLElement *_xmlData, bool _fullInitFlag){
 
-	if(potts->getDisplayUnitsFlag()){
-		Unit contactEnergyUnit=potts->getEnergyUnit()/powerUnit(potts->getLengthUnit(),2);
+	//if(potts->getDisplayUnitsFlag()){
+	//	Unit contactEnergyUnit=potts->getEnergyUnit()/powerUnit(potts->getLengthUnit(),2);
 
 
 
 
-		CC3DXMLElement * unitsElem=_xmlData->getFirstElement("Units"); 
-		if (!unitsElem){ //add Units element
-			unitsElem=_xmlData->attachElement("Units");
-		}
+	//	CC3DXMLElement * unitsElem=_xmlData->getFirstElement("Units"); 
+	//	if (!unitsElem){ //add Units element
+	//		unitsElem=_xmlData->attachElement("Units");
+	//	}
 
-		if(unitsElem->getFirstElement("EnergyUnit")){
-			unitsElem->getFirstElement("EnergyUnit")->updateElementValue(contactEnergyUnit.toString());
-		}else{
-			CC3DXMLElement * energyUnitElem = unitsElem->attachElement("EnergyUnit",contactEnergyUnit.toString());
-		}
+	//	if(unitsElem->getFirstElement("EnergyUnit")){
+	//		unitsElem->getFirstElement("EnergyUnit")->updateElementValue(contactEnergyUnit.toString());
+	//	}else{
+	//		CC3DXMLElement * energyUnitElem = unitsElem->attachElement("EnergyUnit",contactEnergyUnit.toString());
+	//	}
 
-	}
+	//}
 
 	internalEnergies.clear();
 	internalEnergyArray.clear();
@@ -296,6 +268,10 @@ void ContactInternalPlugin::update(CC3DXMLElement *_xmlData, bool _fullInitFlag)
 	//Here I initialize max neighbor index for direct acces to the list of neighbors 
    boundaryStrategy=BoundaryStrategy::getInstance();
    maxNeighborIndex=0;
+
+   if (_xmlData->getFirstElement("WeightEnergyByDistance")) {
+       weightDistance = true;
+   }
 
 	if(_xmlData->getFirstElement("Depth")){
 		maxNeighborIndex=boundaryStrategy->getMaxNeighborIndexFromDepth(_xmlData->getFirstElement("Depth")->getDouble());

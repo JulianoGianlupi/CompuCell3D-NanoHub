@@ -5,6 +5,7 @@
 #include <CompuCell3D/Potts3D/Potts3D.h>
 #include <CompuCell3D/Field3D/Dim3D.h>
 #include <CompuCell3D/Field3D/Field3D.h>
+#include <CompuCell3D/plugins/NeighborTracker/NeighborTrackerPlugin.h>
 #include <Utils/Coordinates3D.h>
 #include <vtkIntArray.h>
 #include <vtkLongArray.h>
@@ -62,7 +63,7 @@ void FieldExtractor::extractCellField(){
 			}
 }
 
-void FieldExtractor::fillCellFieldData2D(long _cellTypeArrayAddr, std::string _plane, int _pos){
+void FieldExtractor::fillCellFieldData2D(vtk_obj_addr_int_t _cellTypeArrayAddr, std::string _plane, int _pos){
 
 	vtkIntArray *_cellTypeArray=(vtkIntArray *)_cellTypeArrayAddr;
 
@@ -117,7 +118,83 @@ void FieldExtractor::fillCellFieldData2D(long _cellTypeArrayAddr, std::string _p
 		}
 }
 
-void FieldExtractor::fillCellFieldData2DHex(long _cellTypeArrayAddr,long _hexCellsArrayAddr ,long _pointsArrayAddr, std::string _plane ,  int _pos){
+void FieldExtractor::fillCellFieldData2DCartesian(vtk_obj_addr_int_t _cellTypeArrayAddr, vtk_obj_addr_int_t _cellsArrayAddr, vtk_obj_addr_int_t _pointsArrayAddr, std::string _plane, int _pos) {
+
+    vtkIntArray *_cellTypeArray = (vtkIntArray *)_cellTypeArrayAddr;
+    vtkPoints *_pointsArray = (vtkPoints *)_pointsArrayAddr;
+    vtkCellArray * _cellsArray = (vtkCellArray*)_cellsArrayAddr;
+
+    Field3D<CellG*> * cellFieldG = potts->getCellFieldG();
+    Dim3D fieldDim = cellFieldG->getDim();
+
+    vector<int> fieldDimVec(3, 0);
+    fieldDimVec[0] = fieldDim.x;
+    fieldDimVec[1] = fieldDim.y;
+    fieldDimVec[2] = fieldDim.z;
+
+    vector<int> pointOrderVec = pointOrder(_plane);
+    vector<int> dimOrderVec = dimOrder(_plane);
+
+    vector<int> dim(3, 0);
+    dim[0] = fieldDimVec[dimOrderVec[0]];
+    dim[1] = fieldDimVec[dimOrderVec[1]];
+    dim[2] = fieldDimVec[dimOrderVec[2]];
+
+    int offset = 0;
+
+    Point3D pt;
+    vector<int> ptVec(3, 0);
+    CellG* cell;
+    int type;
+    long pc = 0;
+
+
+    //when accessing cell field it is OK to go outside cellfieldG limits. In this case null pointer is returned
+
+
+    for (int j = 0; j<dim[1]; ++j)
+        for (int i = 0; i<dim[0]; ++i) {
+            ptVec[0] = i;
+            ptVec[1] = j;
+            ptVec[2] = _pos;
+
+            pt.x = ptVec[pointOrderVec[0]];
+            pt.y = ptVec[pointOrderVec[1]];
+            pt.z = ptVec[pointOrderVec[2]];
+
+            cell = cellFieldG->get(pt);
+            if (!cell) {
+                type = 0;
+                continue;
+            }
+            else {
+                type = cell->type;
+            }
+
+
+            Coordinates3D<double> coords(ptVec[0], ptVec[1], 0); // notice that we are drawing pixels from other planes on a xy plan so we use ptVec instead of pt. pt is absolute position of the point ptVec is for projection purposes
+
+            for (int idx = 0; idx<4; ++idx) {
+                Coordinates3D<double> cartesianVertex = cartesianVertices[idx] + coords;
+                _pointsArray->InsertNextPoint(cartesianVertex.x, cartesianVertex.y, 0.0);
+            }
+
+            pc += 4;
+            vtkIdType cellId = _cellsArray->InsertNextCell(4);
+            _cellsArray->InsertCellPoint(pc - 4);
+            _cellsArray->InsertCellPoint(pc - 3);
+            _cellsArray->InsertCellPoint(pc - 2);
+            _cellsArray->InsertCellPoint(pc - 1);
+
+            _cellTypeArray->InsertNextValue(type);
+            ++offset;
+        }
+    
+
+}
+
+
+void FieldExtractor::fillCellFieldData2DHex(vtk_obj_addr_int_t _cellTypeArrayAddr,vtk_obj_addr_int_t _hexCellsArrayAddr ,vtk_obj_addr_int_t _pointsArrayAddr, std::string _plane ,  int _pos){
 	vtkIntArray *_cellTypeArray=(vtkIntArray *)_cellTypeArrayAddr;
 	vtkPoints *_pointsArray=(vtkPoints *)_pointsArrayAddr;
 	vtkCellArray * _hexCellsArray=(vtkCellArray*)_hexCellsArrayAddr;
@@ -192,7 +269,7 @@ void FieldExtractor::fillCellFieldData2DHex(long _cellTypeArrayAddr,long _hexCel
 		}
 }
 
-void FieldExtractor::fillCellFieldData2DHex_old(long _cellTypeArrayAddr ,long _pointsArrayAddr, std::string _plane ,  int _pos){
+void FieldExtractor::fillCellFieldData2DHex_old(vtk_obj_addr_int_t _cellTypeArrayAddr ,vtk_obj_addr_int_t _pointsArrayAddr, std::string _plane ,  int _pos){
 	vtkIntArray *_cellTypeArray=(vtkIntArray *)_cellTypeArrayAddr;
 	vtkPoints *_pointsArray=(vtkPoints *)_pointsArrayAddr;
 
@@ -254,7 +331,7 @@ void FieldExtractor::fillCellFieldData2DHex_old(long _cellTypeArrayAddr ,long _p
 		}
 }
 
-void FieldExtractor::fillBorderData2D(long _pointArrayAddr ,long _linesArrayAddr, std::string _plane ,  int _pos){
+void FieldExtractor::fillBorderData2D(vtk_obj_addr_int_t _pointArrayAddr ,vtk_obj_addr_int_t _linesArrayAddr, std::string _plane ,  int _pos){
 
 	vtkPoints *points = (vtkPoints *)_pointArrayAddr;
 	vtkCellArray * lines=(vtkCellArray *)_linesArrayAddr; 
@@ -362,7 +439,7 @@ void FieldExtractor::fillBorderData2D(long _pointArrayAddr ,long _linesArrayAddr
 		}
 }
 
-void FieldExtractor::fillBorderData2DHex(long _pointArrayAddr ,long _linesArrayAddr, std::string _plane ,  int _pos){
+void FieldExtractor::fillBorderData2DHex(vtk_obj_addr_int_t _pointArrayAddr ,vtk_obj_addr_int_t _linesArrayAddr, std::string _plane ,  int _pos){
     //this function can be shortened but for now I am leaving it the way it is
 
 	vtkPoints *points = (vtkPoints *)_pointArrayAddr;
@@ -791,7 +868,7 @@ void FieldExtractor::fillBorderData2DHex(long _pointArrayAddr ,long _linesArrayA
 		}
 }
 
-void FieldExtractor::fillClusterBorderData2D(long _pointArrayAddr ,long _linesArrayAddr, std::string _plane ,  int _pos){
+void FieldExtractor::fillClusterBorderData2D(vtk_obj_addr_int_t _pointArrayAddr ,vtk_obj_addr_int_t _linesArrayAddr, std::string _plane ,  int _pos){
         
 
 	vtkPoints *points = (vtkPoints *)_pointArrayAddr;
@@ -907,7 +984,7 @@ void FieldExtractor::fillClusterBorderData2D(long _pointArrayAddr ,long _linesAr
 	}
 }
 
-void FieldExtractor::fillClusterBorderData2DHex(long _pointArrayAddr ,long _linesArrayAddr, std::string _plane ,  int _pos){
+void FieldExtractor::fillClusterBorderData2DHex(vtk_obj_addr_int_t _pointArrayAddr ,vtk_obj_addr_int_t _linesArrayAddr, std::string _plane ,  int _pos){
     //this function has to be redone in the same spirit as fillBorderData2DHex
 	vtkPoints *points = (vtkPoints *)_pointArrayAddr;
 	vtkCellArray * lines = (vtkCellArray *)_linesArrayAddr;
@@ -1339,7 +1416,7 @@ void FieldExtractor::fillClusterBorderData2DHex(long _pointArrayAddr ,long _line
 		}
 }
 
-void FieldExtractor::fillCentroidData2D(long _pointArrayAddr ,long _linesArrayAddr, std::string _plane ,  int _pos){
+void FieldExtractor::fillCentroidData2D(vtk_obj_addr_int_t _pointArrayAddr ,vtk_obj_addr_int_t _linesArrayAddr, std::string _plane ,  int _pos){
 //	cerr << "FieldExtractor::fillCentroidData2D============    numCells="<< potts->getNumCells() <<endl;
 	CellInventory *cellInventoryPtr = &potts->getCellInventory();
 	CellInventory::cellInventoryIterator cInvItr;
@@ -1381,7 +1458,7 @@ void FieldExtractor::fillCentroidData2D(long _pointArrayAddr ,long _linesArrayAd
 	}
 }
 
-bool FieldExtractor::fillConFieldData2DHex(long _conArrayAddr,long _hexCellsArrayAddr ,long _pointsArrayAddr,std::string _conFieldName, std::string _plane ,  int _pos){
+bool FieldExtractor::fillConFieldData2DHex(vtk_obj_addr_int_t _conArrayAddr,vtk_obj_addr_int_t _hexCellsArrayAddr ,vtk_obj_addr_int_t _pointsArrayAddr,std::string _conFieldName, std::string _plane ,  int _pos){
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 
     vtkCellArray * _hexCellsArray=(vtkCellArray*)_hexCellsArrayAddr;
@@ -1460,7 +1537,7 @@ bool FieldExtractor::fillConFieldData2DHex(long _conArrayAddr,long _hexCellsArra
 		return true;
 }
 
-bool FieldExtractor::fillConFieldData2DCartesian(long _conArrayAddr,long _cartesianCellsArrayAddr ,long _pointsArrayAddr , std::string _conFieldName , std::string _plane ,int _pos){
+bool FieldExtractor::fillConFieldData2DCartesian(vtk_obj_addr_int_t _conArrayAddr,vtk_obj_addr_int_t _cartesianCellsArrayAddr ,vtk_obj_addr_int_t _pointsArrayAddr , std::string _conFieldName , std::string _plane ,int _pos){
 
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 	vtkCellArray * _cartesianCellsArray=(vtkCellArray*)_cartesianCellsArrayAddr;
@@ -1542,7 +1619,7 @@ bool FieldExtractor::fillConFieldData2DCartesian(long _conArrayAddr,long _cartes
 }
 
 
-bool FieldExtractor::fillScalarFieldData2DHex(long _conArrayAddr,long _hexCellsArrayAddr ,long _pointsArrayAddr , std::string _conFieldName , std::string _plane ,int _pos){
+bool FieldExtractor::fillScalarFieldData2DHex(vtk_obj_addr_int_t _conArrayAddr,vtk_obj_addr_int_t _hexCellsArrayAddr ,vtk_obj_addr_int_t _pointsArrayAddr , std::string _conFieldName , std::string _plane ,int _pos){
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 	vtkCellArray * _hexCellsArray=(vtkCellArray*)_hexCellsArrayAddr;
 	vtkPoints *_pointsArray=(vtkPoints *)_pointsArrayAddr;
@@ -1617,7 +1694,7 @@ bool FieldExtractor::fillScalarFieldData2DHex(long _conArrayAddr,long _hexCellsA
 		return true;
 }
 
-bool FieldExtractor::fillScalarFieldData2DCartesian(long _conArrayAddr,long _cartesianCellsArrayAddr ,long _pointsArrayAddr , std::string _conFieldName , std::string _plane ,int _pos){
+bool FieldExtractor::fillScalarFieldData2DCartesian(vtk_obj_addr_int_t _conArrayAddr,vtk_obj_addr_int_t _cartesianCellsArrayAddr ,vtk_obj_addr_int_t _pointsArrayAddr , std::string _conFieldName , std::string _plane ,int _pos){
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 	vtkCellArray * _cartesianCellsArray=(vtkCellArray*)_cartesianCellsArrayAddr;
 	vtkPoints *_pointsArray=(vtkPoints *)_pointsArrayAddr;
@@ -1697,7 +1774,7 @@ bool FieldExtractor::fillScalarFieldData2DCartesian(long _conArrayAddr,long _car
 
 
 
-bool FieldExtractor::fillScalarFieldCellLevelData2DHex(long _conArrayAddr,long _hexCellsArrayAddr ,long _pointsArrayAddr , std::string _conFieldName , std::string _plane ,int _pos){
+bool FieldExtractor::fillScalarFieldCellLevelData2DHex(vtk_obj_addr_int_t _conArrayAddr,vtk_obj_addr_int_t _hexCellsArrayAddr ,vtk_obj_addr_int_t _pointsArrayAddr , std::string _conFieldName , std::string _plane ,int _pos){
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 	vtkCellArray * _hexCellsArray=(vtkCellArray*)_hexCellsArrayAddr;
 	vtkPoints *_pointsArray=(vtkPoints *)_pointsArrayAddr;
@@ -1781,7 +1858,7 @@ bool FieldExtractor::fillScalarFieldCellLevelData2DHex(long _conArrayAddr,long _
 }
 
 
-bool FieldExtractor::fillScalarFieldCellLevelData2DCartesian(long _conArrayAddr,long _cartesianCellsArrayAddr ,long _pointsArrayAddr , std::string _conFieldName , std::string _plane ,int _pos){
+bool FieldExtractor::fillScalarFieldCellLevelData2DCartesian(vtk_obj_addr_int_t _conArrayAddr,vtk_obj_addr_int_t _cartesianCellsArrayAddr ,vtk_obj_addr_int_t _pointsArrayAddr , std::string _conFieldName , std::string _plane ,int _pos){
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 	vtkCellArray * _cartesianCellsArray=(vtkCellArray*)_cartesianCellsArrayAddr;
 	vtkPoints *_pointsArray=(vtkPoints *)_pointsArrayAddr;
@@ -1868,7 +1945,7 @@ bool FieldExtractor::fillScalarFieldCellLevelData2DCartesian(long _conArrayAddr,
 }
 
 
-bool FieldExtractor::fillConFieldData2D(long _conArrayAddr,std::string _conFieldName, std::string _plane ,  int _pos){
+bool FieldExtractor::fillConFieldData2D(vtk_obj_addr_int_t _conArrayAddr,std::string _conFieldName, std::string _plane ,  int _pos){
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 	Field3D<float> *conFieldPtr=0; 
 	std::map<std::string,Field3D<float>*> & fieldMap=sim->getConcentrationFieldNameMap();
@@ -1935,7 +2012,7 @@ bool FieldExtractor::fillConFieldData2D(long _conArrayAddr,std::string _conField
 		return true;
 }
 
-bool FieldExtractor::fillScalarFieldData2D(long _conArrayAddr,std::string _conFieldName, std::string _plane ,  int _pos){
+bool FieldExtractor::fillScalarFieldData2D(vtk_obj_addr_int_t _conArrayAddr,std::string _conFieldName, std::string _plane ,  int _pos){
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 	FieldStorage::floatField3D_t * conFieldPtr=fsPtr->getScalarFieldByName(_conFieldName); 
 
@@ -1995,7 +2072,7 @@ bool FieldExtractor::fillScalarFieldData2D(long _conArrayAddr,std::string _conFi
 		return true;
 }
 
-bool FieldExtractor::fillScalarFieldCellLevelData2D(long _conArrayAddr,std::string _conFieldName, std::string _plane ,  int _pos){
+bool FieldExtractor::fillScalarFieldCellLevelData2D(vtk_obj_addr_int_t _conArrayAddr,std::string _conFieldName, std::string _plane ,  int _pos){
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 	FieldStorage::scalarFieldCellLevel_t * conFieldPtr=fsPtr->getScalarFieldCellLevelFieldByName(_conFieldName); 
 
@@ -2067,7 +2144,7 @@ bool FieldExtractor::fillScalarFieldCellLevelData2D(long _conArrayAddr,std::stri
 		return true;
 }
 
-bool FieldExtractor::fillVectorFieldData2D(long _pointsArrayIntAddr,long _vectorArrayIntAddr,std::string _fieldName, std::string _plane ,  int _pos){
+bool FieldExtractor::fillVectorFieldData2D(vtk_obj_addr_int_t _pointsArrayIntAddr,vtk_obj_addr_int_t _vectorArrayIntAddr,std::string _fieldName, std::string _plane ,  int _pos){
 	vtkFloatArray * vectorArray=(vtkFloatArray *)_vectorArrayIntAddr;
 	vtkPoints *pointsArray=(vtkPoints *)_pointsArrayIntAddr;
 
@@ -2135,7 +2212,7 @@ bool FieldExtractor::fillVectorFieldData2D(long _pointsArrayIntAddr,long _vector
 		return true;
 }
 
-bool FieldExtractor::fillVectorFieldData2DHex(long _pointsArrayIntAddr,long _vectorArrayIntAddr,std::string _fieldName, std::string _plane ,  int _pos){
+bool FieldExtractor::fillVectorFieldData2DHex(vtk_obj_addr_int_t _pointsArrayIntAddr,vtk_obj_addr_int_t _vectorArrayIntAddr,std::string _fieldName, std::string _plane ,  int _pos){
 	vtkFloatArray * vectorArray=(vtkFloatArray *)_vectorArrayIntAddr;
 	vtkPoints *pointsArray=(vtkPoints *)_pointsArrayIntAddr;
 
@@ -2202,7 +2279,7 @@ bool FieldExtractor::fillVectorFieldData2DHex(long _pointsArrayIntAddr,long _vec
 		return true;
 }
 
-bool FieldExtractor::fillVectorFieldData3D(long _pointsArrayIntAddr,long _vectorArrayIntAddr,std::string _fieldName){
+bool FieldExtractor::fillVectorFieldData3D(vtk_obj_addr_int_t _pointsArrayIntAddr,vtk_obj_addr_int_t _vectorArrayIntAddr,std::string _fieldName){
 
 	vtkFloatArray * vectorArray=(vtkFloatArray *)_vectorArrayIntAddr;
 	vtkPoints *pointsArray=(vtkPoints *)_pointsArrayIntAddr;
@@ -2239,7 +2316,7 @@ bool FieldExtractor::fillVectorFieldData3D(long _pointsArrayIntAddr,long _vector
 			return true;
 }
 
-bool FieldExtractor::fillVectorFieldCellLevelData2D(long _pointsArrayIntAddr,long _vectorArrayIntAddr,std::string _fieldName, std::string _plane ,  int _pos){
+bool FieldExtractor::fillVectorFieldCellLevelData2D(vtk_obj_addr_int_t _pointsArrayIntAddr,vtk_obj_addr_int_t _vectorArrayIntAddr,std::string _fieldName, std::string _plane ,  int _pos){
 	vtkFloatArray * vectorArray=(vtkFloatArray *)_vectorArrayIntAddr;
 	vtkPoints *pointsArray=(vtkPoints *)_pointsArrayIntAddr;
 
@@ -2312,7 +2389,7 @@ bool FieldExtractor::fillVectorFieldCellLevelData2D(long _pointsArrayIntAddr,lon
 		return true;
 }
 
-bool FieldExtractor::fillVectorFieldCellLevelData2DHex(long _pointsArrayIntAddr,long _vectorArrayIntAddr,std::string _fieldName, std::string _plane ,  int _pos){
+bool FieldExtractor::fillVectorFieldCellLevelData2DHex(vtk_obj_addr_int_t _pointsArrayIntAddr,vtk_obj_addr_int_t _vectorArrayIntAddr,std::string _fieldName, std::string _plane ,  int _pos){
 	vtkFloatArray * vectorArray=(vtkFloatArray *)_vectorArrayIntAddr;
 	vtkPoints *pointsArray=(vtkPoints *)_pointsArrayIntAddr;
 
@@ -2384,7 +2461,7 @@ bool FieldExtractor::fillVectorFieldCellLevelData2DHex(long _pointsArrayIntAddr,
 		return true;
 }
 
-bool FieldExtractor::fillVectorFieldCellLevelData3D(long _pointsArrayIntAddr,long _vectorArrayIntAddr,std::string _fieldName){
+bool FieldExtractor::fillVectorFieldCellLevelData3D(vtk_obj_addr_int_t _pointsArrayIntAddr,vtk_obj_addr_int_t _vectorArrayIntAddr,std::string _fieldName){
 	vtkFloatArray * vectorArray=(vtkFloatArray *)_vectorArrayIntAddr;
 	vtkPoints *pointsArray=(vtkPoints *)_pointsArrayIntAddr;
 
@@ -2430,55 +2507,51 @@ bool FieldExtractor::fillVectorFieldCellLevelData3D(long _pointsArrayIntAddr,lon
 			return true;
 }
 
-//vector<int> FieldExtractor::fillCellFieldData3D_old(long _cellTypeArrayAddr){
-//	set<int> usedCellTypes;
-//
-//	vtkIntArray *cellTypeArray=(vtkIntArray *)_cellTypeArrayAddr;
-//
-//	Field3D<CellG*> * cellFieldG=potts->getCellFieldG();
-//	Dim3D fieldDim=cellFieldG->getDim();
-//
-//	cellTypeArray->SetNumberOfValues((fieldDim.x+2)*(fieldDim.y+2)*(fieldDim.z+2));
-//
-//	Point3D pt;
-//	CellG* cell;
-//	int type;
-//	int offset=0;
-//	//when accessing cell field it is OK to go outside cellfieldG limits. In this case null pointer is returned
-//	for(int k =0 ; k<fieldDim.z+2 ; ++k)
-//		for(int j =0 ; j<fieldDim.y+2 ; ++j)
-//			for(int i =0 ; i<fieldDim.x+2 ; ++i){
-//				if(i==0 || i==fieldDim.x+1 ||j==0 || j==fieldDim.y+1 || k==0 || k==fieldDim.z+1){
-//					cellTypeArray->InsertValue(offset, 0);
-//					++offset;
-//				}else{
-//					pt.x=i-1;
-//					pt.y=j-1;
-//					pt.z=k-1;
-//					cell=cellFieldG->get(pt);
-//					if (!cell){
-//						type=0;
-//					}else{
-//						type=cell->type;
-//						usedCellTypes.insert(type);
-//					}
-//					cellTypeArray->InsertValue(offset, type);
-//					++offset;
-//				}
-//			}
-//			return vector<int>(usedCellTypes.begin(),usedCellTypes.end());
-//}
 
-vector<int> FieldExtractor::fillCellFieldData3D(long _cellTypeArrayAddr, long _cellIdArrayAddr){
+vector<int> FieldExtractor::fillCellFieldData3D(vtk_obj_addr_int_t _cellTypeArrayAddr, vtk_obj_addr_int_t _cellIdArrayAddr){
 	set<int> usedCellTypes;
-
 	vtkIntArray *cellTypeArray=(vtkIntArray *)_cellTypeArrayAddr;
 	vtkLongArray *cellIdArray=(vtkLongArray *)_cellIdArrayAddr;
 
 	Field3D<CellG*> * cellFieldG=potts->getCellFieldG();
 	Dim3D fieldDim = cellFieldG->getDim();
 
-	cellTypeArray->SetNumberOfValues((fieldDim.x+2)*(fieldDim.y+2)*(fieldDim.z+2));
+    // if neighbor tracker is loaded we can figure out cell ids that touch medium (we call them outer cells) and render only those
+    // this way we do not waste time rendering inner cells that are not seen because they are covered by outer cells. 
+    // this algorithm is not perfect but does significantly speed up 3D rendering
+
+    bool neighbor_tracker_loaded = Simulator::pluginManager.isLoaded("NeighborTracker");
+    //cout << "neighbor_tracker_loaded=" << neighbor_tracker_loaded << endl;
+    BasicClassAccessor<NeighborTracker> *neighborTrackerAccessorPtr;
+    if (neighbor_tracker_loaded) {
+        bool pluginAlreadyRegisteredFlag;
+        NeighborTrackerPlugin *nTrackerPlugin = (NeighborTrackerPlugin*)Simulator::pluginManager.get("NeighborTracker", &pluginAlreadyRegisteredFlag);
+        neighborTrackerAccessorPtr = nTrackerPlugin->getNeighborTrackerAccessorPtr();
+    }
+
+    std::unordered_set<long> outer_cell_ids_set;
+    if (neighbor_tracker_loaded) {
+        
+        CellInventory::cellInventoryIterator cInvItr;
+        CellG * cell;
+        std::set<NeighborSurfaceData > * neighborData;
+        CellInventory & cellInventory = potts->getCellInventory();
+
+        for (cInvItr = cellInventory.cellInventoryBegin(); cInvItr != cellInventory.cellInventoryEnd(); ++cInvItr)
+        {
+            cell = cellInventory.getCell(cInvItr);            
+            std::set<NeighborSurfaceData > * neighborsPtr = &(neighborTrackerAccessorPtr->get(cell->extraAttribPtr)->cellNeighbors);
+            set<NeighborSurfaceData>::iterator sitr;            
+            for (sitr = neighborsPtr->begin(); sitr != neighborsPtr->end(); ++sitr) {
+                if (!sitr->neighborAddress) {
+                    outer_cell_ids_set.insert(cell->id);
+                    break;
+                }
+            }
+        }
+    }
+    
+	cellTypeArray->SetNumberOfValues((fieldDim.x+2)*(fieldDim.y+2)*(fieldDim.z+2));	
 	cellIdArray->SetNumberOfValues((fieldDim.x+2)*(fieldDim.y+2)*(fieldDim.z+2));
 
 	Point3D pt;
@@ -2497,7 +2570,7 @@ vector<int> FieldExtractor::fillCellFieldData3D(long _cellTypeArrayAddr, long _c
 				}else{
 					pt.x=i-1;
 					pt.y=j-1;
-					pt.z=k-1;
+					pt.z=k-1;					
 					cell = cellFieldG->get(pt);
 					if (!cell){
 						type=0;
@@ -2507,15 +2580,31 @@ vector<int> FieldExtractor::fillCellFieldData3D(long _cellTypeArrayAddr, long _c
 						id = cell->id;
 						usedCellTypes.insert(type);
 					}
-					cellTypeArray->InsertValue(offset, type);
-					cellIdArray->InsertValue(offset, id);
-					++offset;
+                    if (neighbor_tracker_loaded) {
+                        if (outer_cell_ids_set.find(id) != outer_cell_ids_set.end()) {
+                            cellTypeArray->InsertValue(offset, type);
+                            cellIdArray->InsertValue(offset, id);
+                            ++offset;
+                        }
+                        else {
+                            cellTypeArray->InsertValue(offset, 0);
+                            cellIdArray->InsertValue(offset, 0);
+                            ++offset;
+
+                        }
+
+                    }
+                    else {
+                        cellTypeArray->InsertValue(offset, type);
+                        cellIdArray->InsertValue(offset, id);
+                        ++offset;
+                    }
 				}
 			}
 			return vector<int>(usedCellTypes.begin(),usedCellTypes.end());
 }
 
-bool FieldExtractor::fillConFieldData3D(long _conArrayAddr ,long _cellTypeArrayAddr, std::string _conFieldName,std::vector<int> * _typesInvisibeVec){
+bool FieldExtractor::fillConFieldData3D(vtk_obj_addr_int_t _conArrayAddr ,vtk_obj_addr_int_t _cellTypeArrayAddr, std::string _conFieldName,std::vector<int> * _typesInvisibeVec){
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 	vtkIntArray *cellTypeArray=(vtkIntArray *)_cellTypeArrayAddr;
 
@@ -2579,7 +2668,7 @@ bool FieldExtractor::fillConFieldData3D(long _conArrayAddr ,long _cellTypeArrayA
 			return true;
 }
 // rwh: leave this function in until we determine we really don't want to add a boundary layer
-bool FieldExtractor::fillScalarFieldData3D(long _conArrayAddr ,long _cellTypeArrayAddr, std::string _conFieldName,std::vector<int> * _typesInvisibeVec){
+bool FieldExtractor::fillScalarFieldData3D(vtk_obj_addr_int_t _conArrayAddr ,vtk_obj_addr_int_t _cellTypeArrayAddr, std::string _conFieldName,std::vector<int> * _typesInvisibeVec){
 
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 	vtkIntArray *cellTypeArray=(vtkIntArray *)_cellTypeArrayAddr;
@@ -2692,7 +2781,7 @@ bool FieldExtractor::fillScalarFieldData3D(long _conArrayAddr ,long _cellTypeArr
 //			return true;
 //}
 
-bool FieldExtractor::fillScalarFieldCellLevelData3D(long _conArrayAddr ,long _cellTypeArrayAddr, std::string _conFieldName,std::vector<int> * _typesInvisibeVec){
+bool FieldExtractor::fillScalarFieldCellLevelData3D(vtk_obj_addr_int_t _conArrayAddr ,vtk_obj_addr_int_t _cellTypeArrayAddr, std::string _conFieldName,std::vector<int> * _typesInvisibeVec){
 
 	vtkDoubleArray *conArray=(vtkDoubleArray *)_conArrayAddr;
 	vtkIntArray *cellTypeArray=(vtkIntArray *)_cellTypeArrayAddr;

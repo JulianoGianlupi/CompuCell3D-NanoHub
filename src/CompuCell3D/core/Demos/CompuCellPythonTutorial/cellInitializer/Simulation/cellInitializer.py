@@ -1,29 +1,7 @@
-import sys
-from os import environ
-from os import getcwd
-import string
+import cc3d.CompuCellSetup as CompuCellSetup
+from .CellInitializerSteppables import CellInitializer
 
-sys.path.append(environ["PYTHON_MODULE_PATH"])
+CompuCellSetup.register_steppable(steppable=CellInitializer(frequency=100))
 
-
-import CompuCellSetup
-
-
-
-sim,simthread = CompuCellSetup.getCoreSimulationObjects()
-import CompuCell
-
-#Create extra player fields here or add attributes
-CompuCellSetup.initializeSimulationObjects(sim,simthread)
-
-
-#Add Python steppables here
-from PySteppablesExamples import SteppableRegistry
-steppableRegistry=SteppableRegistry()
-
-from cellInitializerSteppables import CellInitializer
-ci=CellInitializer(_simulator=sim,_frequency=100)
-steppableRegistry.registerSteppable(ci)
-
-CompuCellSetup.mainLoop(sim,simthread,steppableRegistry)
+CompuCellSetup.run()
 

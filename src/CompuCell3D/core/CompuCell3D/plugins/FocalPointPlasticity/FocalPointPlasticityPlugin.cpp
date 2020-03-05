@@ -20,24 +20,7 @@
 *      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.        *
 *************************************************************************/
 #include <CompuCell3D/CC3D.h>
-// // // #include <CompuCell3D/Field3D/Field3D.h>
-// // // #include <CompuCell3D/Field3D/WatchableField3D.h>
-// // // #include <CompuCell3D/Potts3D/Potts3D.h>
-
-// // // #include <CompuCell3D/Simulator.h>
-// // // #include <CompuCell3D/Potts3D/Cell.h>
-// // // #include <CompuCell3D/Automaton/Automaton.h>
-// // // #include <PublicUtilities/NumericalUtils.h>
-// // // #include <Utils/Coordinates3D.h>
-
 using namespace CompuCell3D;
-
-// // // #include <BasicUtils/BasicString.h>
-// // // #include <BasicUtils/BasicException.h>
-// // // #include <PublicUtilities/ParallelUtilsOpenMP.h>
-// // // #include <iostream>
-// // // #include <algorithm>
-
 using namespace std;
 
 #include "FocalPointPlasticityPlugin.h"
@@ -118,39 +101,39 @@ void FocalPointPlasticityPlugin::handleEvent(CC3DEvent & _event){
 
 void FocalPointPlasticityPlugin::update(CC3DXMLElement *_xmlData, bool _fullInitFlag){
 
-	if(potts->getDisplayUnitsFlag()){
-		Unit targetLengthPlasticityUnit=potts->getLengthUnit();
-		Unit lambdaPlasticityUnit=potts->getEnergyUnit()/(targetLengthPlasticityUnit*targetLengthPlasticityUnit);
+	//if(potts->getDisplayUnitsFlag()){
+	//	Unit targetLengthPlasticityUnit=potts->getLengthUnit();
+	//	Unit lambdaPlasticityUnit=potts->getEnergyUnit()/(targetLengthPlasticityUnit*targetLengthPlasticityUnit);
 
-		CC3DXMLElement * unitsElem=_xmlData->getFirstElement("Units"); 
-		if (!unitsElem){ //add Units element
-			unitsElem=_xmlData->attachElement("Units");
-		}
+	//	CC3DXMLElement * unitsElem=_xmlData->getFirstElement("Units"); 
+	//	if (!unitsElem){ //add Units element
+	//		unitsElem=_xmlData->attachElement("Units");
+	//	}
 
-		if(unitsElem->getFirstElement("TargetDistanceUnit")){
-			unitsElem->getFirstElement("TargetDistanceUnit")->updateElementValue(targetLengthPlasticityUnit.toString());
-		}else{
-			unitsElem->attachElement("TargetDistanceUnit",targetLengthPlasticityUnit.toString());
-		}
+	//	if(unitsElem->getFirstElement("TargetDistanceUnit")){
+	//		unitsElem->getFirstElement("TargetDistanceUnit")->updateElementValue(targetLengthPlasticityUnit.toString());
+	//	}else{
+	//		unitsElem->attachElement("TargetDistanceUnit",targetLengthPlasticityUnit.toString());
+	//	}
 
-		if(unitsElem->getFirstElement("MaxDistanceUnit")){
-			unitsElem->getFirstElement("MaxDistanceUnit")->updateElementValue(targetLengthPlasticityUnit.toString());
-		}else{
-			unitsElem->attachElement("MaxDistanceUnit",targetLengthPlasticityUnit.toString());
-		}
+	//	if(unitsElem->getFirstElement("MaxDistanceUnit")){
+	//		unitsElem->getFirstElement("MaxDistanceUnit")->updateElementValue(targetLengthPlasticityUnit.toString());
+	//	}else{
+	//		unitsElem->attachElement("MaxDistanceUnit",targetLengthPlasticityUnit.toString());
+	//	}
 
-		if(unitsElem->getFirstElement("LambdaUnit")){
-			unitsElem->getFirstElement("LambdaUnit")->updateElementValue(lambdaPlasticityUnit.toString());
-		}else{
-			unitsElem->attachElement("LambdaUnit",lambdaPlasticityUnit.toString());
-		}
+	//	if(unitsElem->getFirstElement("LambdaUnit")){
+	//		unitsElem->getFirstElement("LambdaUnit")->updateElementValue(lambdaPlasticityUnit.toString());
+	//	}else{
+	//		unitsElem->attachElement("LambdaUnit",lambdaPlasticityUnit.toString());
+	//	}
 
-		if(unitsElem->getFirstElement("ActivationEnergyUnit")){
-			unitsElem->getFirstElement("ActivationEnergyUnit")->updateElementValue(potts->getEnergyUnit().toString());
-		}else{
-			unitsElem->attachElement("ActivationEnergyUnit",(potts->getEnergyUnit()).toString());
-		}
-	}
+	//	if(unitsElem->getFirstElement("ActivationEnergyUnit")){
+	//		unitsElem->getFirstElement("ActivationEnergyUnit")->updateElementValue(potts->getEnergyUnit().toString());
+	//	}else{
+	//		unitsElem->attachElement("ActivationEnergyUnit",(potts->getEnergyUnit()).toString());
+	//	}
+	//}
 	automaton = potts->getAutomaton();
 
 	set<unsigned char> cellTypesSet;
@@ -1264,20 +1247,25 @@ void FocalPointPlasticityPlugin::deleteInternalFocalPointPlasticityLink(CellG * 
 
 }
 void FocalPointPlasticityPlugin::createFocalPointPlasticityLink(CellG * _cell1,CellG * _cell2,double _lambda, double _targetDistance,double _maxDistance){
-	FocalPointPlasticityTrackerData fpptd1=plastParamsArray[_cell1->type][_cell2->type];
+//	FocalPointPlasticityTrackerData fpptd1=plastParamsArray[_cell1->type][_cell2->type];
+
+	FocalPointPlasticityTrackerData fpptd1;
 	fpptd1.targetDistance=_targetDistance;
 	fpptd1.lambdaDistance=_lambda;
 	fpptd1.maxDistance=_maxDistance;			
 	fpptd1.neighborAddress=_cell2;
+	fpptd1.isInitiator = true;
 
 	focalPointPlasticityTrackerAccessor.get(_cell1->extraAttribPtr)->focalPointPlasticityNeighbors.insert(fpptd1);
 
 
-	FocalPointPlasticityTrackerData fpptd2=plastParamsArray[_cell2->type][_cell1->type];
+//	FocalPointPlasticityTrackerData fpptd2=plastParamsArray[_cell2->type][_cell1->type];
+    FocalPointPlasticityTrackerData fpptd2;
 	fpptd2.targetDistance=_targetDistance;
 	fpptd2.lambdaDistance=_lambda;
 	fpptd2.maxDistance=_maxDistance;			
 	fpptd2.neighborAddress=_cell1;
+	fpptd2.isInitiator = false;
 
 	focalPointPlasticityTrackerAccessor.get(_cell2->extraAttribPtr)->focalPointPlasticityNeighbors.insert(fpptd2);
 
@@ -1286,20 +1274,24 @@ void FocalPointPlasticityPlugin::createFocalPointPlasticityLink(CellG * _cell1,C
 }
 
 void FocalPointPlasticityPlugin::createInternalFocalPointPlasticityLink(CellG * _cell1,CellG * _cell2,double _lambda, double _targetDistance,double _maxDistance){
-	FocalPointPlasticityTrackerData fpptd1=internalPlastParamsArray[_cell1->type][_cell2->type];
+//	FocalPointPlasticityTrackerData fpptd1=internalPlastParamsArray[_cell1->type][_cell2->type];
+    FocalPointPlasticityTrackerData fpptd1;
 	fpptd1.targetDistance=_targetDistance;
 	fpptd1.lambdaDistance=_lambda;
 	fpptd1.maxDistance=_maxDistance;			
 	fpptd1.neighborAddress=_cell2;
+	fpptd1.isInitiator = true;
 
 	focalPointPlasticityTrackerAccessor.get(_cell1->extraAttribPtr)->internalFocalPointPlasticityNeighbors.insert(fpptd1);
 
 
-	FocalPointPlasticityTrackerData fpptd2=internalPlastParamsArray[_cell2->type][_cell1->type];
+//	FocalPointPlasticityTrackerData fpptd2=internalPlastParamsArray[_cell2->type][_cell1->type];
+    FocalPointPlasticityTrackerData fpptd2;
 	fpptd2.targetDistance=_targetDistance;
 	fpptd2.lambdaDistance=_lambda;
 	fpptd2.maxDistance=_maxDistance;			
 	fpptd2.neighborAddress=_cell1;
+	fpptd2.isInitiator = false;
 
 	focalPointPlasticityTrackerAccessor.get(_cell2->extraAttribPtr)->internalFocalPointPlasticityNeighbors.insert(fpptd2);
 
@@ -1379,21 +1371,25 @@ void FocalPointPlasticityPlugin::field3DChange(const Point3D &pt, CellG *newCell
 			fpptd.targetDistance=fpptd.targetDistance;
 			//cerr<<"setting fpptd.targetDistance="<<fpptd.targetDistance<<endl;
 			fpptd.neighborAddress=newNeighbor;
+			fpptd.isInitiator = true;
 
 			focalPointPlasticityTrackerAccessor.get(newCell->extraAttribPtr)->focalPointPlasticityNeighbors.		
 				insert(FocalPointPlasticityTrackerData(fpptd));
 
 
 			fpptd.neighborAddress=newCell;
+			fpptd.isInitiator = false;
 			focalPointPlasticityTrackerAccessor.get(newNeighbor->extraAttribPtr)->focalPointPlasticityNeighbors.
 				insert(FocalPointPlasticityTrackerData(fpptd));
 
 		}else if (functionType==GLOBAL){
-			focalPointPlasticityTrackerAccessor.get(newCell->extraAttribPtr)->focalPointPlasticityNeighbors.
-				insert(FocalPointPlasticityTrackerData(newNeighbor,lambda,0.9*distance));
+			FocalPointPlasticityTrackerData fpptd = FocalPointPlasticityTrackerData(newNeighbor, lambda, 0.9*distance);
+			fpptd.isInitiator = true;
+			focalPointPlasticityTrackerAccessor.get(newCell->extraAttribPtr)->focalPointPlasticityNeighbors.insert(FocalPointPlasticityTrackerData(fpptd));
 
-			focalPointPlasticityTrackerAccessor.get(newNeighbor->extraAttribPtr)->focalPointPlasticityNeighbors.
-				insert(FocalPointPlasticityTrackerData(newCell,lambda,0.9*distance));
+			fpptd = FocalPointPlasticityTrackerData(newCell, lambda, 0.9*distance);
+			fpptd.isInitiator = false;
+			focalPointPlasticityTrackerAccessor.get(newNeighbor->extraAttribPtr)->focalPointPlasticityNeighbors.insert(FocalPointPlasticityTrackerData(fpptd));
 		}
 		//}
 		return;
@@ -1430,24 +1426,27 @@ void FocalPointPlasticityPlugin::field3DChange(const Point3D &pt, CellG *newCell
 			fpptd.targetDistance=fpptd.targetDistance;
 			//cerr<<"setting fpptd.targetDistance="<<fpptd.targetDistance<<endl;
 			fpptd.neighborAddress=newNeighbor;
-
+			fpptd.isInitiator = true;
 			focalPointPlasticityTrackerAccessor.get(newCell->extraAttribPtr)->internalFocalPointPlasticityNeighbors.		
 				insert(FocalPointPlasticityTrackerData(fpptd));
 
 			//cerr<<"newCell="<<newCell<< " FTTPDs="<<focalPointPlasticityTrackerAccessor.get(newCell->extraAttribPtr)->internalFocalPointPlasticityNeighbors.size()<<endl;
 
 			fpptd.neighborAddress=newCell;
+			fpptd.isInitiator = false;
 			focalPointPlasticityTrackerAccessor.get(newNeighbor->extraAttribPtr)->internalFocalPointPlasticityNeighbors.
 				insert(FocalPointPlasticityTrackerData(fpptd));
 
 			//cerr<<"newNeighbor="<<newNeighbor<<" FTTPDs="<<focalPointPlasticityTrackerAccessor.get(newNeighbor->extraAttribPtr)->internalFocalPointPlasticityNeighbors.size()<<endl;
 
 		}else if (functionType==GLOBAL){
-			focalPointPlasticityTrackerAccessor.get(newCell->extraAttribPtr)->internalFocalPointPlasticityNeighbors.
-				insert(FocalPointPlasticityTrackerData(newNeighbor,lambda,0.9*distance));
+			FocalPointPlasticityTrackerData fpptd = FocalPointPlasticityTrackerData(newNeighbor, lambda, 0.9*distance);
+			fpptd.isInitiator = true;
+			focalPointPlasticityTrackerAccessor.get(newCell->extraAttribPtr)->internalFocalPointPlasticityNeighbors.insert(fpptd);
 
-			focalPointPlasticityTrackerAccessor.get(newNeighbor->extraAttribPtr)->internalFocalPointPlasticityNeighbors.
-				insert(FocalPointPlasticityTrackerData(newCell,lambda,0.9*distance));
+			fpptd = FocalPointPlasticityTrackerData(newCell, lambda, 0.9*distance);
+			fpptd.isInitiator = false;
+			focalPointPlasticityTrackerAccessor.get(newNeighbor->extraAttribPtr)->internalFocalPointPlasticityNeighbors.insert(fpptd);
 		}
 		//}
 		return;

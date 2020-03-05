@@ -1,21 +1,6 @@
 #include <CompuCell3D/CC3D.h>
 
-// // // #include <CompuCell3D/Simulator.h>
-// // // #include <CompuCell3D/Potts3D/Potts3D.h>
-
-// // // #include <CompuCell3D/Field3D/Field3D.h>
-// // // #include <CompuCell3D/Field3D/WatchableField3D.h>
-// // // #include <CompuCell3D/Boundary/BoundaryStrategy.h>
-// // // #include <PublicUtilities/NumericalUtils.h>
-
-// // // #include <CompuCell3D/Potts3D/CellInventory.h>
-// // // #include <CompuCell3D/Automaton/Automaton.h>
 using namespace CompuCell3D;
-
-// // // #include <BasicUtils/BasicString.h>
-// // // #include <BasicUtils/BasicException.h>
-// // // #include <PublicUtilities/StringUtils.h>
-// // // #include <algorithm>
 
 #include "ContactOrientationPlugin.h"
 
@@ -377,19 +362,19 @@ void ContactOrientationPlugin::update(CC3DXMLElement *_xmlData, bool _fullInitFl
     set<unsigned char> cellTypesSet;
     contactEnergies.clear();
     
-    if(potts->getDisplayUnitsFlag()){
-        Unit contactEnergyUnit=potts->getEnergyUnit()/powerUnit(potts->getLengthUnit(),2);
-        CC3DXMLElement * unitsElem=_xmlData->getFirstElement("Units"); 
-        if (!unitsElem){ //add Units element
-                unitsElem=_xmlData->attachElement("Units");
-        }
+    //if(potts->getDisplayUnitsFlag()){
+    //    Unit contactEnergyUnit=potts->getEnergyUnit()/powerUnit(potts->getLengthUnit(),2);
+    //    CC3DXMLElement * unitsElem=_xmlData->getFirstElement("Units"); 
+    //    if (!unitsElem){ //add Units element
+    //            unitsElem=_xmlData->attachElement("Units");
+    //    }
 
-        if(unitsElem->getFirstElement("EnergyUnit")){
-                unitsElem->getFirstElement("EnergyUnit")->updateElementValue(contactEnergyUnit.toString());
-        }else{
-                CC3DXMLElement * energyUnitElem = unitsElem->attachElement("EnergyUnit",contactEnergyUnit.toString());
-        }
-    }
+    //    if(unitsElem->getFirstElement("EnergyUnit")){
+    //            unitsElem->getFirstElement("EnergyUnit")->updateElementValue(contactEnergyUnit.toString());
+    //    }else{
+    //            CC3DXMLElement * energyUnitElem = unitsElem->attachElement("EnergyUnit",contactEnergyUnit.toString());
+    //    }
+    //}
     
     CC3DXMLElementList energyVec=_xmlData->getElements("Energy");
     

@@ -80,6 +80,8 @@ namespace CompuCell3D {
 
 		std::string basePath;
 		bool restartEnabled;
+        std::string step_output;
+        std::string output_directory;
         
 
 	public:
@@ -93,6 +95,10 @@ namespace CompuCell3D {
         
 		double simValue;
 		
+        void setOutputDirectory(std::string output_directory);
+        std::string getOutputDirectory();
+
+
 		void setOutputRedirectionTarget(ptrdiff_t  _ptr);
 		ptrdiff_t getCerrStreamBufOrig();
 		void restoreCerrStreamBufOrig(ptrdiff_t _ptr);
@@ -107,6 +113,9 @@ namespace CompuCell3D {
 		Simulator();
 		virtual ~Simulator();
 		//     PluginManager::plugins_t & getPluginMap(){return pluginManager.getPluginMap();}
+
+        void add_step_output(const std::string &s);
+        std::string get_step_output();
 
 		//Error handling functions
 		std::string getRecentErrorMessage(){return recentErrorMessage;}
@@ -135,6 +144,7 @@ namespace CompuCell3D {
 		Simulator *getSimulatorPtr(){return this;}
 		ClassRegistry *getClassRegistry() {return classRegistry;}
 
+        std::string formatErrorMessage(const BasicException &e);
 
 		void registerConcentrationField(std::string _name,Field3D<float>* _fieldPtr);
 		std::map<std::string,Field3D<float>*> & getConcentrationFieldNameMap(){
