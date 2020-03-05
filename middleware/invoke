@@ -1,5 +1,5 @@
 #!/bin/sh
 
-/usr/bin/invoke_app "$@" -C @tool/CompuCell3D/compucell3d.sh -t compucell3d \
+/usr/bin/invoke_app "$@" -C @tool/CompuCell3Dpy3/compucell3d.sh -t compucell3dpy3 \
                          -u pyqt5-5.10.1 \
                          -u vtk-6.3.0
